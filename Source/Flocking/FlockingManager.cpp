@@ -1,7 +1,7 @@
 #include "FlockingManager.h"
 #include "Agent.h"
 
-#define AGENT_COUNT 10    
+#define AGENT_COUNT 20    
 
 void UFlockingManager::Init(UWorld* world, UStaticMeshComponent* mesh) {
     UE_LOG(LogTemp, Warning, TEXT("MANAGER INIT"));
@@ -16,6 +16,7 @@ void UFlockingManager::Init(UWorld* world, UStaticMeshComponent* mesh) {
             FVector location = FVector();
             location.X = FMath::Sin(incr * i) * 150.f;
             location.Z = FMath::Cos(incr * i) * 150.f;
+            location.Y = FMath::Cos(incr * i) * 30.f;
 
             AAgent* agent = World->SpawnActor<AAgent>(location, rotation);
             agent->Init(mesh, i);
@@ -28,78 +29,103 @@ void UFlockingManager::Init(UWorld* world, UStaticMeshComponent* mesh) {
 
 void UFlockingManager::Flock() {
     
-    FVector v1, v2, v3;
+    FVector v1, v2, v3, v4;
     
     for (int i = 0; i < AGENT_COUNT; i++) {
         v1 = GetCenter(i);  
         v2 = SocialDistancing(i);  
         v3 = MatchSpeed(i);
+        v4 = BoundTo(i);
 
-        Agents[i]->Velocity = Agents[i]->Velocity + v1 + v2 + v3;
-        Agents[i]->GetActorLocation() = Agents[i]->GetActorLocation() + Agents[i]->Velocity;
+        FVector totalForce = (v1 + v2 + v3 + v4) * 0.01f;
+        totalForce.Normalize();
+
+        Agents[i]->Velocity += totalForce;
+        setSpeed(i);
+        Agents[i]->SetActorLocation(Agents[i]->GetActorLocation() + Agents[i]->Velocity);
     };
 }
 
 FVector UFlockingManager::GetCenter(int currentb) {
-
-    FVector centerPos;
+    FVector centerPos = FVector::ZeroVector;
 
     for (int i = 0; i < AGENT_COUNT; i++) {
-        if (Agents[i] != Agents[currentb]) {
-            centerPos = centerPos + Agents[i]->GetActorLocation().X;
-        };
-    };
+        if (i != currentb) {
+            centerPos.X += Agents[i]->GetActorLocation().X;
+            centerPos.Y += Agents[i]->GetActorLocation().Y;
+            centerPos.Z += Agents[i]->GetActorLocation().Z;
+        }
+    }
 
-    centerPos.X = centerPos.X / AGENT_COUNT - 1;
-    centerPos.Y = centerPos.Y / AGENT_COUNT - 1;
-    centerPos.Z = centerPos.Z / AGENT_COUNT - 1;
+    centerPos /= AGENT_COUNT - 1;
 
     return (centerPos - Agents[currentb]->GetActorLocation()) / 100;
-
 }
 
 FVector UFlockingManager::SocialDistancing(int currentb) {
-    
-    FVector c;
-    c.X = 0.0f;
-    c.Y = 0.0f;
-    c.Z = 0.0f;
+    FVector c = FVector::ZeroVector;
 
     for (int i = 0; i < AGENT_COUNT; i++) {
-        if (Agents[i] != Agents[currentb]) {
+        if (i != currentb) {
             FVector itA = Agents[i]->GetActorLocation();
             FVector currA = Agents[currentb]->GetActorLocation();
-            if (abs((itA.X - currA.X) < 100 &&
-                abs((itA.Y - currA.Y)) < 100 &&
-                abs((itA.Z - currA.Z)) > 100)) {
+            float distance = FVector::Distance(itA, currA);
+            if (distance < 100) {
+                c += (currA - itA) * 0.01f; // Adjust this factor as needed
+            }
+        }
+    }
 
-                c.X = c.X - (itA.X - currA.X);
-                c.Y = c.Y - (itA.Y - currA.Y);
-                c.Z = c.Z - (itA.Z - currA.Z);
-            };
-        };
-    };
-    
     return c;
-
 }
 
 FVector UFlockingManager::MatchSpeed(int currentb) {
-
-    FVector p;
+    FVector avgVelocity = FVector::ZeroVector;
 
     for (int i = 0; i < AGENT_COUNT; i++) {
-        if (Agents[i] != Agents[currentb]) {
-            p = p + Agents[i]->GetActorLocation();
-        };
-    };
+        if (i != currentb) {
+            avgVelocity += Agents[i]->Velocity;
+        }
+    }
 
-    p.X = p.X / AGENT_COUNT - 1;
-    p.Y = p.Y / AGENT_COUNT - 1;
-    p.Z = p.Z / AGENT_COUNT - 1;
+    avgVelocity /= AGENT_COUNT - 1;
+
+    return (avgVelocity - Agents[currentb]->Velocity) * 0.01f; // Adjust this factor as needed
+}
+
+FVector UFlockingManager::BoundTo(int currentb) {
+    int Xmin = -1000, Xmax = 1000, Ymin = -1000, Ymax = 1000, Zmin = -1000, Zmax = 1000;
+    float boundStrength = 0.1f;
+
+    FVector v = FVector::ZeroVector;
+    FVector currentLocation = Agents[currentb]->GetActorLocation();
+    FVector& velocity = Agents[currentb]->Velocity;
+
+    // Check X-axis boundaries
+    if (currentLocation.X < Xmin || currentLocation.X > Xmax) {
+        velocity.X *= -1; // Reverse X velocity
+    }
+
+    // Check Y-axis boundaries
+    if (currentLocation.Y < Ymin || currentLocation.Y > Ymax) {
+        velocity.Y *= -1; // Reverse Y velocity
+    }
+
+    // Check Z-axis boundaries
+    if (currentLocation.Z < Zmin || currentLocation.Z > Zmax) {
+        velocity.Z *= -1; // Reverse Z velocity;
+        velocity.Z += -10;
+    }
+
+    return v;
+}
 
 
-    return (p - Agents[currentb]->Velocity) / 8;
+void UFlockingManager::setSpeed(int currentb) {
+    int vlim = 50;
+    FVector& v = Agents[currentb]->Velocity;
 
-
-};
+    if (v.Size() > vlim) {
+        v = v.GetSafeNormal() * vlim;
+    }
+}

@@ -15,6 +15,8 @@ public:
 	FVector GetCenter(int currentb);
 	FVector SocialDistancing(int currentb);
 	FVector MatchSpeed(int currentb);
+	FVector BoundTo(int currentb);
+	void setSpeed(int currentb);
 
 private:
 	UWorld* World;
