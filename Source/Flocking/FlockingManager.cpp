@@ -71,7 +71,7 @@ FVector UFlockingManager::SocialDistancing(int currentb) {
             FVector currA = Agents[currentb]->GetActorLocation();
             float distance = FVector::Distance(itA, currA);
             if (distance < 100) {
-                c += (currA - itA) * 0.01f; // Adjust this factor as needed
+                c += (currA - itA) * 0.01f; 
             }
         }
     }
@@ -90,7 +90,7 @@ FVector UFlockingManager::MatchSpeed(int currentb) {
 
     avgVelocity /= AGENT_COUNT - 1;
 
-    return (avgVelocity - Agents[currentb]->Velocity) * 0.01f; // Adjust this factor as needed
+    return (avgVelocity - Agents[currentb]->Velocity) * 0.01f; 
 }
 
 FVector UFlockingManager::BoundTo(int currentb) {
