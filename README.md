@@ -9,6 +9,8 @@ This game includes the following rules:
     -Bounding Positions
     -Limiting the speed
 
-To run this project either:
+To run this project:
  -Open the folder where the project is stored and click on the flocking.uproject file to open unreal engine 5. 
- -Open the folder wehre the project is stored and click on the .sln
+
+ To view a demo video of the project:
+ -In this repo click on BoidsBoiding.mp4 and download. Once downloaded open it with your media player of choice and enjoy.
