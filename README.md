@@ -10,4 +10,5 @@ This game includes the following rules:
     -Limiting the speed
 
 To run this project either:
- -Open the up
+ -Open the folder where the project is stored and click on the flocking.uproject file to open unreal engine 5. 
+ -Open the folder wehre the project is stored and click on the .sln
